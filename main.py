@@ -11,16 +11,13 @@ def main():
        %(prog)s --file data.txt
        """
     )
-    # parser.add_help(
-
-    # )
     subparsers = parser.add_subparsers(
         dest="command",
         help="Доступные команды",
         required=True,
         metavar="Команда"
     )
-    # region Возможные аргументы
+
     # Версия
     parser.add_argument(
         '--version',
@@ -28,10 +25,11 @@ def main():
         version='%(prog)s 1.0.0 beta'
     )
     # Отдельный обработчик для создания редактирования файлов
-    # Обработка файлов
+    # region Возможные аргументы для
+    # region process
     process_parser = subparsers.add_parser(
         'process',
-        help="Обработать файлы",
+        help="Обработать файлы"
     )
     # Входной файл
     process_parser.add_argument(
@@ -58,14 +56,51 @@ def main():
         help="Перезаписать файлы",
     )
     # endregion
+    # region find
+    find_parser = subparsers.add_parser(
+        'find',
+        help="Искать файлы"
+    )
+    # Имя файла
+    find_parser.add_argument(
+        "-n", "--name",
+        help="Имя файла для поиска"
+    )
+    # Патерн для поиска
+    find_parser.add_argument(
+        "-p", "--pattern",
+        help="Патерн названия файла"
+    )
+    # endregion
+    # region status
+    status_parser = subparsers.add_parser(
+        'status',
+        help="Вывести статус о файле"
+    )
+    # Выбор файла
+    status_parser.add_argument(
+        "-f", "--filename",
+        help="Файл для просмотра"
+    )
+    # Режим вывода
+    status_parser.add_argument(
+        "-a", "--all",
+        help="Вывести весь статус файла",
+    )
+    # endregion
+    # endregion
     # region Получение аргументов
     args = parser.parse_args()
     if args.command is None:
         parser.print_help()
         sys.exit(1)
     try:
-        if args.command == 'process':
+        if args.command == "process":
             handle_process(args)
+        elif args.command == "find":
+            handle_find(args)
+        elif args.command == "status":
+            handle_status(args)
     except Exception as e:
         print(e)
         sys.exit(1)
@@ -91,6 +126,45 @@ def handle_process(args):
     with open(output_file, 'w', encoding="utf-8") as f:
         content = f.write(processed_content)
     print("Файл обработан")
+def handle_find(args):
+    found = False
+    if args.name == args.pattern == None:
+         raise Exception("Дебик, чё мне делать, укажи!")
+    elif args.name != None and args.pattern != None:
+        raise Exception("Дебик, выбери только 1 способ для поиска!")
+    elif args.name != None:
+        print("Найденные файлы:")
+        for root, dirs, files in os.walk(os.path.dirname(os.path.realpath(__file__))):
+            for file in files:
+                if file == args.name:
+                    print(root+"/"+file)
+                    found = True
+        if not found:
+            print("Файлы не найдены!")
+    elif args.pattern != None:
+        print("Найденные файлы:")
+        for root, dirs, files in os.walk(os.path.dirname(os.path.realpath(__file__))):
+            for file in files:
+                if args.pattern in file:
+                    print(root+"\\"+file)
+                    found = True
+        if not found:
+            print("Файлы не найдены!")
+def handle_status(args):
+    filename = args.filename
+    if not os.path.exists(filename):
+        raise Exception("Дебик, файл мне укажи!")
+    amountLines = 0
+    amountChars = 0
+    with open(filename, "r") as f:
+        for line in f:
+            amountLines += 1
+            amountChars += len(line)
+    print(f"Информация о файле {filename}:")
+    print("Размер -", os.path.getsize(filename))
+    print("Количество строк -", amountLines)
+    print("Количество символов -", amountChars)
+    print("Формат файла -", filename.split(".")[-1])
 
 if __name__ == '__main__':
     main()
